@@ -1,0 +1,4 @@
+ofxMSATensorFlow
+ofxOpenCv
+ofxCv
+ofxGui
