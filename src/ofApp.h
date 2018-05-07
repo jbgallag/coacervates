@@ -28,8 +28,6 @@ public:
     //for loading tensorflow model
     void load_model(string model_dir);
     void load_model_index(int index);
-    //image draw helper
-    template <typename T> bool drawImage(const T& img, string label);
     //tensorflow constants
     const int input_shape[2] = {256, 256}; // dimensions {height, width} for input image
     const int output_shape[2] = {256, 256}; // dimensions {height, width} for output image
@@ -43,10 +41,13 @@ public:
     std::vector<ofImage> captures;
     std::vector<ofImage> prevCaptures;
     std::vector<ofImage> grayScales;
-    std::vector<ofFloatImage> coarIn;
-    std::vector<ofFloatImage> coarImages;
+    std::vector<ofFloatImage> coaIn;
+    std::vector<ofFloatImage> coaOut;
 
-    ofImage grayImage;
+    std::vector<ofPolyline> polyLines;
+
+
+    ofImage drawImage;
     size_t segSizeX,segSizeY,crpX,crpY;
     int vWidth,vHeight;
 
@@ -55,6 +56,16 @@ public:
     int cur_model_index = 0;
 
     ofFbo combFBO;
+    ofFbo drawFBO;
+
+    bool closePline = false;
     bool tfRdy = false;
+
+    //variables for strange attractor
+    float x,y,a,b,c,d;
+    int maxIterations;
+    int attrIterCount;
+
+
 
 };
