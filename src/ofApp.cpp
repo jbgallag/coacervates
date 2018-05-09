@@ -3,18 +3,22 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     //set video w/h
-    vWidth = 768;
-    vHeight = 768;
+    vWidth = 256;
+    vHeight = 256;
 
     ofSetVerticalSync(true);
 
     //how many cells to break image into in xy
-    segSizeX = 3;
-    segSizeY = 3;
+    segSizeX = 1;
+    segSizeY = 1;
     //size of each image
     crpX = (size_t)vWidth/segSizeX;
     crpY = (size_t)vHeight/segSizeY;
+    //bools
+    rsampPline = true;
 
+    drawImage.allocate(vWidth,vHeight,OF_IMAGE_COLOR);
+    
     for(size_t y=0; y<segSizeY; y++) {
         for(size_t x=0; x<segSizeX; x++) {
             ofFloatImage inImg,outImg;
@@ -78,9 +82,15 @@ void ofApp::draw(){
     ofPushMatrix();
     drawFBO.begin();
     //ofSetLineWidth(20);
-    for(auto pline: polyLines) {
+    for(auto &pline: polyLines) {
         pline.draw();
     }
+    
+    
+    for(auto &pline: rpolyLines) {
+        drawReSampledPolylines(pline);
+    }
+    
     drawFBO.end();
     drawFBO.draw(0,0);
     ofPopMatrix();
@@ -109,6 +119,53 @@ void ofApp::draw(){
     }
 }
 
+void ofApp::drawReSampledPolylines(ofPolyline &resampledPoly)
+{
+    ofPushMatrix();
+    //ofTranslate(ofGetWidth() / 2, 0);
+    //ofDrawRectangle(0, 0, ofGetWidth() / 2, ofGetHeight());
+    
+    
+    // Draw the resampled polyline in yellow.
+    ofSetColor(ofColor::yellow);
+    resampledPoly.draw();
+    // Draw its vertices.
+    ofSetColor(255, 255, 127);
+    for (auto vertex: resampledPoly.getVertices())
+    {
+        ofDrawCircle(vertex, 3);
+    }
+    
+    ofSetColor(255);
+    ofDrawBitmapString("Resampled by Spacing", 14, ofGetHeight() - 14);
+    
+    float time = ofGetElapsedTimef();
+    
+    for (std::size_t i = 0; i < resampledPoly.size(); i=i+3)
+    {
+        float phase = ofMap(i, 0, resampledPoly.size(), 0, glm::pi<float>());
+        float scaling = 25 * sin(time + phase);
+        
+        // The normal is a normalized vector representing the "Normal" direction.
+        glm::vec3 theNormal = resampledPoly.getNormalAtIndex(i);
+        // First we stretch it to the length we want.
+        glm::vec3 theScaledNormal = theNormal * scaling;
+        glm::vec3 vertex = resampledPoly[i];
+        // Then we translate it to get its position relative to the vertex.
+        glm::vec3 positiveNormalVertexOffset = vertex + theScaledNormal;
+        glm::vec3 negativeNormalVertexOffset = vertex - theScaledNormal;
+        
+        ofNoFill();
+        //ofSetColor(255, 80);
+        ofDrawCircle(positiveNormalVertexOffset, scaling / 3);
+        ofDrawLine(vertex, positiveNormalVertexOffset);
+        
+        //ofSetColor(255, 0, 0, 80);
+        ofDrawCircle(negativeNormalVertexOffset, scaling / 3);
+        ofDrawLine(vertex, negativeNormalVertexOffset);
+    }
+    ofPopMatrix();
+}
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
 
@@ -133,7 +190,9 @@ void ofApp::mouseDragged(int x, int y, int button){
 void ofApp::mousePressed(int x, int y, int button){
 
     ofPolyline pLine;
+    ofPolyline rpLine;
     polyLines.push_back(pLine);
+    rpolyLines.push_back(rpLine);
     polyLines[polyLines.size()-1].addVertex(x,y);
 }
 
@@ -141,8 +200,12 @@ void ofApp::mousePressed(int x, int y, int button){
 void ofApp::mouseReleased(int x, int y, int button){
 
     polyLines[polyLines.size()-1].addVertex(x,y);
-    if(closePline)
+    //if(closePline)
         polyLines[polyLines.size()-1].close();
+    if(rsampPline)
+        rpolyLines[rpolyLines.size()-1] = polyLines[polyLines.size()-1].getResampledBySpacing(20);
+    
+    
 }
 
 //--------------------------------------------------------------

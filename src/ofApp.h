@@ -28,6 +28,7 @@ public:
     //for loading tensorflow model
     void load_model(string model_dir);
     void load_model_index(int index);
+    void drawReSampledPolylines(ofPolyline &resampledPoly);
     //tensorflow constants
     const int input_shape[2] = {256, 256}; // dimensions {height, width} for input image
     const int output_shape[2] = {256, 256}; // dimensions {height, width} for output image
@@ -45,6 +46,7 @@ public:
     std::vector<ofFloatImage> coaOut;
 
     std::vector<ofPolyline> polyLines;
+    std::vector<ofPolyline> rpolyLines;
 
 
     ofImage drawImage;
@@ -59,6 +61,7 @@ public:
     ofFbo drawFBO;
 
     bool closePline = false;
+    bool rsampPline = false;
     bool tfRdy = false;
 
     //variables for strange attractor
