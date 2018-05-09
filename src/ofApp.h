@@ -4,7 +4,10 @@
 #include "ofxMSATensorFlow.h"
 #include "ofxOpenCv.h"
 #include "ofxCv.h"
+#include "ofxPanel.h"
+#include "ofxGuiGroup.h"
 
+//#include "ofxARTTECH3039.h"
 
 class ofApp : public ofBaseApp{
 
@@ -25,6 +28,8 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
 
+    void setupGUI();
+    void drawGUI();
     //for loading tensorflow model
     void load_model(string model_dir);
     void load_model_index(int index);
@@ -68,6 +73,14 @@ public:
     float x,y,a,b,c,d;
     int maxIterations;
     int attrIterCount;
+
+    int dispXOff,dispYOff;
+
+    ofParameter<int>scaleRange;
+    ofParameter<int>strideRange;
+    ofParameter<int>radiusRange;
+
+    ofxPanel rangeGui;
 
 
 

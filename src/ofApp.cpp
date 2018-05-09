@@ -3,20 +3,24 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     //set video w/h
-    vWidth = 256;
-    vHeight = 256;
+    ofBackground(30);
+    vWidth = 768;
+    vHeight = 768;
+
+    dispXOff = 192;
+    dispYOff = 216;
 
     ofSetVerticalSync(true);
 
     //how many cells to break image into in xy
-    segSizeX = 1;
-    segSizeY = 1;
+    segSizeX = 3;
+    segSizeY = 3;
     //size of each image
     crpX = (size_t)vWidth/segSizeX;
     crpY = (size_t)vHeight/segSizeY;
     //bools
     rsampPline = true;
-
+    closePline = true;
     drawImage.allocate(vWidth,vHeight,OF_IMAGE_COLOR);
     
     for(size_t y=0; y<segSizeY; y++) {
@@ -42,6 +46,8 @@ void ofApp::setup(){
     }
     models_dir.sort();
     load_model_index(0); // load first model
+
+    setupGUI();
 
 
 }
@@ -79,22 +85,30 @@ void ofApp::load_model(string model_dir)
 //--------------------------------------------------------------
 void ofApp::draw(){
 
-    ofPushMatrix();
+    drawGUI();
+    //ofPushMatrix();
     drawFBO.begin();
+    ofClear(0,0,0);
+    drawFBO.end();
+    drawFBO.begin();
+    ofPushMatrix();
     //ofSetLineWidth(20);
     for(auto &pline: polyLines) {
         pline.draw();
     }
     
-    
-    for(auto &pline: rpolyLines) {
-        drawReSampledPolylines(pline);
+    if(rsampPline) {
+        for(auto &pline: rpolyLines) {
+            drawReSampledPolylines(pline);
+        }
     }
-    
-    drawFBO.end();
-    drawFBO.draw(0,0);
-    ofPopMatrix();
 
+    ofPopMatrix();
+    drawFBO.end();
+    drawFBO.draw(dispXOff,dispYOff);
+   // ofPopMatrix();
+
+    drawFBO.readToPixels(drawImage.getPixels());
     //read the draw FBO then break up into segSizeX*segSizeY images
     size_t cpIdx = 0;
     for(size_t y=0; y<segSizeY; y++) {
@@ -109,8 +123,8 @@ void ofApp::draw(){
     cpIdx = 0;
     for(size_t y = 0; y<segSizeY; y++) {
         for(size_t x = 0; x<segSizeX; x++) {
-            float xStart = x*crpX + vWidth;
-            float yStart = y*crpY;
+            float xStart = x*crpX + dispXOff + vWidth;
+            float yStart = y*crpY + dispYOff;
 
             model.run_image_to_image(coaIn[cpIdx],coaOut[cpIdx], input_range, output_range);
             coaOut[cpIdx].draw(xStart,yStart);
@@ -121,30 +135,30 @@ void ofApp::draw(){
 
 void ofApp::drawReSampledPolylines(ofPolyline &resampledPoly)
 {
-    ofPushMatrix();
+    //ofPushMatrix();
     //ofTranslate(ofGetWidth() / 2, 0);
     //ofDrawRectangle(0, 0, ofGetWidth() / 2, ofGetHeight());
     
     
     // Draw the resampled polyline in yellow.
-    ofSetColor(ofColor::yellow);
+    //ofSetColor(ofColor::yellow);
     resampledPoly.draw();
     // Draw its vertices.
-    ofSetColor(255, 255, 127);
-    for (auto vertex: resampledPoly.getVertices())
-    {
-        ofDrawCircle(vertex, 3);
-    }
+   // ofSetColor(255, 255, 127);
+   // for (auto vertex: resampledPoly.getVertices())
+   // {
+   //     ofDrawCircle(vertex, 3);
+   // }
     
-    ofSetColor(255);
-    ofDrawBitmapString("Resampled by Spacing", 14, ofGetHeight() - 14);
+   // ofSetColor(255);
+   // ofDrawBitmapString("Resampled by Spacing", 14, ofGetHeight() - 14);
     
     float time = ofGetElapsedTimef();
-    
-    for (std::size_t i = 0; i < resampledPoly.size(); i=i+3)
+    size_t stride = (size_t)ofRandom(1,strideRange);
+    for (std::size_t i = 0; i < resampledPoly.size(); i=i+stride)
     {
         float phase = ofMap(i, 0, resampledPoly.size(), 0, glm::pi<float>());
-        float scaling = 25 * sin(time + phase);
+        float scaling = ofRandom(25,scaleRange) * sin(time + phase);
         
         // The normal is a normalized vector representing the "Normal" direction.
         glm::vec3 theNormal = resampledPoly.getNormalAtIndex(i);
@@ -157,18 +171,65 @@ void ofApp::drawReSampledPolylines(ofPolyline &resampledPoly)
         
         ofNoFill();
         //ofSetColor(255, 80);
-        ofDrawCircle(positiveNormalVertexOffset, scaling / 3);
+        ofDrawCircle(positiveNormalVertexOffset, scaling / ofRandom(1,radiusRange));
         ofDrawLine(vertex, positiveNormalVertexOffset);
         
         //ofSetColor(255, 0, 0, 80);
-        ofDrawCircle(negativeNormalVertexOffset, scaling / 3);
+        ofDrawCircle(negativeNormalVertexOffset, scaling /ofRandom(1,radiusRange));
         ofDrawLine(vertex, negativeNormalVertexOffset);
     }
-    ofPopMatrix();
+   // ofPopMatrix();
+}
+
+void ofApp::setupGUI()
+{
+    rangeGui.setup();
+    rangeGui.setPosition(50,50);
+    rangeGui.add(strideRange.set("Stride Range",1,1,5));
+    rangeGui.add(scaleRange.set("Scale Range",25,25,100));
+    rangeGui.add(radiusRange.set("radius range",1,1,5));
+
+}
+
+void ofApp::drawGUI()
+{
+    rangeGui.draw();
 }
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
+    switch(key) {
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+        load_model_index(key-'1');
+        break;
 
+
+    case 'f':
+        if(rsampPline) {
+            rsampPline = false;
+        } else {
+            rsampPline = true;
+        }
+        break;
+    case 'c':
+        if(closePline) {
+            closePline = false;
+        } else {
+            closePline = true;
+        }
+        break;
+    case 'n':
+        polyLines.clear();
+        rpolyLines.clear();
+        break;
+    }
 }
 
 //--------------------------------------------------------------
@@ -183,7 +244,7 @@ void ofApp::mouseMoved(int x, int y ){
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-    polyLines[polyLines.size()-1].addVertex(x,y);
+    polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
 }
 
 //--------------------------------------------------------------
@@ -193,14 +254,14 @@ void ofApp::mousePressed(int x, int y, int button){
     ofPolyline rpLine;
     polyLines.push_back(pLine);
     rpolyLines.push_back(rpLine);
-    polyLines[polyLines.size()-1].addVertex(x,y);
+    polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
 
-    polyLines[polyLines.size()-1].addVertex(x,y);
-    //if(closePline)
+    polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
+    if(closePline)
         polyLines[polyLines.size()-1].close();
     if(rsampPline)
         rpolyLines[rpolyLines.size()-1] = polyLines[polyLines.size()-1].getResampledBySpacing(20);
