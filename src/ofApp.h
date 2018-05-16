@@ -6,7 +6,7 @@
 #include "ofxCv.h"
 #include "ofxPanel.h"
 #include "ofxGuiGroup.h"
-
+#include "ofxFlocking.h"
 //#include "ofxARTTECH3039.h"
 
 class ofApp : public ofBaseApp{
@@ -33,7 +33,7 @@ public:
     //for loading tensorflow model
     void load_model(string model_dir);
     void load_model_index(int index);
-    void drawReSampledPolylines(ofPolyline &resampledPoly);
+    void drawReSampledPolylines(ofPolyline &resampledPoly, int tx, int ty);
     //tensorflow constants
     const int input_shape[2] = {256, 256}; // dimensions {height, width} for input image
     const int output_shape[2] = {256, 256}; // dimensions {height, width} for output image
@@ -54,6 +54,9 @@ public:
     std::vector<ofPolyline> rpolyLines;
 
 
+    ofFloatImage inImage;
+    ofFloatImage outImage;
+    ofImage dispImage;
     ofImage drawImage;
     size_t segSizeX,segSizeY,crpX,crpY;
     int vWidth,vHeight;
@@ -81,6 +84,9 @@ public:
     ofParameter<int>radiusRange;
 
     ofxPanel rangeGui;
+
+    int startCount = 6;
+    ofxFlocking flock;
 
 
 

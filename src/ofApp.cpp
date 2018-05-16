@@ -13,17 +13,21 @@ void ofApp::setup(){
     ofSetVerticalSync(true);
 
     //how many cells to break image into in xy
-    segSizeX = 3;
-    segSizeY = 3;
+    segSizeX = 1;
+    segSizeY = 1;
     //size of each image
-    crpX = (size_t)vWidth/segSizeX;
-    crpY = (size_t)vHeight/segSizeY;
+    crpX = 256;//(size_t)vWidth/segSizeX;
+    crpY = 256;//(size_t)vHeight/segSizeY;
     //bools
     rsampPline = true;
     closePline = true;
+
+    dispImage.allocate(crpX,crpY,OF_IMAGE_COLOR);
+    outImage.allocate(crpX,crpY,OF_IMAGE_COLOR);
+    inImage.allocate(crpX,crpY,OF_IMAGE_COLOR);
+
     drawImage.allocate(vWidth,vHeight,OF_IMAGE_COLOR);
-    
-    for(size_t y=0; y<segSizeY; y++) {
+    /*for(size_t y=0; y<segSizeY; y++) {
         for(size_t x=0; x<segSizeX; x++) {
             ofFloatImage inImg,outImg;
             ofImage anImg;
@@ -34,7 +38,7 @@ void ofApp::setup(){
             coaIn.push_back(inImg);
             grayScales.push_back(anImg);
         }
-    }
+    }*/
 
     drawFBO.allocate(vWidth,vHeight, GL_RGB);
     //load tensorflow model
@@ -48,6 +52,12 @@ void ofApp::setup(){
     load_model_index(0); // load first model
 
     setupGUI();
+    //for (int i = startCount; i > 0; i--) {
+     //       flock.addBoid();
+     //   }
+
+
+    //setup flock
 
 
 }
@@ -59,6 +69,7 @@ void ofApp::load_model_index(int index) {
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    //flock.update();
 
 }
 
@@ -84,33 +95,64 @@ void ofApp::load_model(string model_dir)
 }
 //--------------------------------------------------------------
 void ofApp::draw(){
-
-    drawGUI();
+    if(flock.boids.size() > 0)
+        flock.update();
+    //drawGUI();
     //ofPushMatrix();
     drawFBO.begin();
     ofClear(0,0,0);
     drawFBO.end();
     drawFBO.begin();
-    ofPushMatrix();
+    //ofPushMatrix();
     //ofSetLineWidth(20);
-    for(auto &pline: polyLines) {
-        pline.draw();
-    }
+    //for(auto &pline: polyLines) {
+     //   pline.draw();
+    //}
     
-    if(rsampPline) {
+   // if(rsampPline) {
+        size_t cnt = 0;
         for(auto &pline: rpolyLines) {
-            drawReSampledPolylines(pline);
-        }
-    }
 
-    ofPopMatrix();
+            if(flock.boids.size() > 0) {
+               // ofPushMatrix();
+               // ofTranslate({flock.boids[cnt].loc.x,flock.boids[cnt].loc.y});
+
+                drawReSampledPolylines(pline,flock.boids[cnt].loc.x-dispXOff,flock.boids[cnt].loc.y-dispYOff);
+                cnt++;
+               // ofPopMatrix();
+              //  printf("FLOCK_LOX: %f %f\n",flock.boids[cnt].loc.x,flock.boids[cnt].loc.y);
+            }
+           // drawReSampledPolylines(pline);
+
+            //cnt++;
+        }
+   // }
+
+   // flock.draw();
+   // ofPopMatrix();
     drawFBO.end();
     drawFBO.draw(dispXOff,dispYOff);
    // ofPopMatrix();
 
-    drawFBO.readToPixels(drawImage.getPixels());
+
+    drawFBO.readToPixels(dispImage.getPixels());
+    dispImage.update();
+    dispImage.resize(crpX,crpY);
+    //dispImage.draw(0,0);
+
+    inImage.setFromPixels(dispImage.getPixels());
+    inImage.update();
+    model.run_image_to_image(inImage,outImage, input_range, output_range);
+    drawImage.setFromPixels(outImage.getPixels());
+    drawImage.resize(vWidth,vHeight);
+    drawImage.draw(dispXOff+vWidth,dispYOff);
+    //outImage.resize(vWidth,vHeight);
+    //outImage.update();
+    //outImage.resize(vWidth,vHeight);
+    //outImage.update();
+   // outImage.draw(dispXOff+vWidth,dispYOff);
     //read the draw FBO then break up into segSizeX*segSizeY images
-    size_t cpIdx = 0;
+    /*size_t cpIdx = 0;
     for(size_t y=0; y<segSizeY; y++) {
         for(size_t x=0; x<segSizeX; x++) {
             size_t startX = x*crpX;
@@ -118,25 +160,28 @@ void ofApp::draw(){
             coaIn[cpIdx].cropFrom(drawImage, startX, startY, crpX, crpY);
             cpIdx++;
         }
-    }
+    }*/
 
-    cpIdx = 0;
+    /*cpIdx = 0;
     for(size_t y = 0; y<segSizeY; y++) {
         for(size_t x = 0; x<segSizeX; x++) {
             float xStart = x*crpX + dispXOff + vWidth;
             float yStart = y*crpY + dispYOff;
 
             model.run_image_to_image(coaIn[cpIdx],coaOut[cpIdx], input_range, output_range);
+            coaOut[cpIdx].resize(vWidth,vHeight);
             coaOut[cpIdx].draw(xStart,yStart);
             cpIdx++;
         }
-    }
+    }*/
+
+
 }
 
-void ofApp::drawReSampledPolylines(ofPolyline &resampledPoly)
+void ofApp::drawReSampledPolylines(ofPolyline &resampledPoly, int tx, int ty)
 {
-    //ofPushMatrix();
-    //ofTranslate(ofGetWidth() / 2, 0);
+    ofPushMatrix();
+    ofTranslate(tx,ty);
     //ofDrawRectangle(0, 0, ofGetWidth() / 2, ofGetHeight());
     
     
@@ -178,7 +223,7 @@ void ofApp::drawReSampledPolylines(ofPolyline &resampledPoly)
         ofDrawCircle(negativeNormalVertexOffset, scaling /ofRandom(1,radiusRange));
         ofDrawLine(vertex, negativeNormalVertexOffset);
     }
-   // ofPopMatrix();
+    ofPopMatrix();
 }
 
 void ofApp::setupGUI()
@@ -228,6 +273,7 @@ void ofApp::keyPressed(int key){
     case 'n':
         polyLines.clear();
         rpolyLines.clear();
+        flock.boids.clear();
         break;
     }
 }
@@ -263,8 +309,10 @@ void ofApp::mouseReleased(int x, int y, int button){
     polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
     if(closePline)
         polyLines[polyLines.size()-1].close();
-    if(rsampPline)
+    if(rsampPline) {
         rpolyLines[rpolyLines.size()-1] = polyLines[polyLines.size()-1].getResampledBySpacing(20);
+        flock.addBoid(rpolyLines[rpolyLines.size()-1].getCentroid2D().x,rpolyLines[rpolyLines.size()-1].getCentroid2D().y);
+    }
     
     
 }
