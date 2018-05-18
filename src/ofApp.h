@@ -91,6 +91,7 @@ public:
     ofParameter<float>cohesionDistance;
     ofParameter<float>alignDistance;
     ofParameter<float>separateDistance;
+    ofParameter<float>maxSpeed;
 
 
 

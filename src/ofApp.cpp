@@ -100,6 +100,7 @@ void ofApp::draw(){
             flock.boids[i].setSeperateDistance(separateDistance);
             flock.boids[i].setCohesionDistance(cohesionDistance);
             flock.boids[i].setAlignDistance(alignDistance);
+            flock.boids[i].setMaxSpeed(maxSpeed);
         }
         flock.update();
     }
@@ -221,9 +222,10 @@ void ofApp::setupGUI()
 {
     rangeGui.setup();
     rangeGui.setPosition(50,50);
-    rangeGui.add(separateDistance.set("Separation",50,1,500));
-    rangeGui.add(alignDistance.set("Align",50,1,500));
-    rangeGui.add(cohesionDistance.set("Cohesion",50,1,500));
+    rangeGui.add(separateDistance.set("Separation",25,1,50));
+    rangeGui.add(alignDistance.set("Align",25,1,50));
+    rangeGui.add(cohesionDistance.set("Cohesion",25,1,50));
+    rangeGui.add(maxSpeed.set("Max Speed",1.5,0.5,25.0));
     //rangeGui.add(scaleRange.set("Scale Range",25,25,100));
     //rangeGui.add(radiusRange.set("radius range",1,1,5));
 

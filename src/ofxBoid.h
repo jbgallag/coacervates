@@ -52,6 +52,7 @@ public:
     inline void setCohesionDistance(float cd) {cohesionDistance = cd;}
     inline void setAlignDistance(float ad) {alignDistance = ad;}
     inline void setSeperateDistance(float sd) {seperateDistance = sd;}
+    inline void setMaxSpeed(float ms) { maxspeed = ms;}
 
 };
 
