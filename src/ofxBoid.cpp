@@ -24,7 +24,7 @@ Boid::Boid(int x, int y) {
     loc.set(x,y);
 	vel.set(0,0);
 	acc.set(0,0);
-    r = 15.0;
+    r = 3.0;
     maxspeed = 1.5;
     maxforce = 1.1;
 
@@ -43,11 +43,11 @@ void Boid::update(vector<Boid> &boids) {
     loc += vel;
     acc.set(0,0);  // Reset accelertion to 0 each cycle
 	
-    if (loc.x < -r) loc.x = 0+vWidth-r;
-    if (loc.y < -r) loc.y = 0+vHeight-r;
+    if (loc.x < (-r)) loc.x = vWidth-r;
+    if (loc.y < (-r)) loc.y = vHeight-r;
 
-    if (loc.x > vWidth+r) loc.x = (r);
-    if (loc.y > vHeight+r) loc.y = (r);
+    if (loc.x > (vWidth+r)) loc.x = (r);
+    if (loc.y > (vHeight+r)) loc.y = (r);
 }
 
 void Boid::seek(ofVec2f target) {
@@ -121,7 +121,7 @@ void Boid::flock(vector<Boid> &boids) {
 	ofVec2f coh = cohesion(boids);
 	
 	// Arbitrarily weight these forces
-    sep *= 1.5;
+    sep *= 1.0;
 	ali *= 1.0;
 	coh *= 1.0;
 	
@@ -144,7 +144,7 @@ bool Boid::isHit(int x, int y, int radius) {
 // Separation
 // Method checks for nearby boids and steers away
 ofVec2f Boid::separate(vector<Boid> &boids) {
-    float desiredseparation = 250.0f;
+    float desiredseparation = seperateDistance;
     ofVec2f steer;
     int count = 0;
 	
@@ -188,7 +188,7 @@ ofVec2f Boid::separate(vector<Boid> &boids) {
 // Alignment
 // For every nearby boid in the system, calculate the average velocity
 ofVec2f Boid::align(vector<Boid> &boids) {
-    float neighbordist = 50.0;
+    float neighbordist = alignDistance;
     ofVec2f steer;
     int count = 0;
     for (int i = 0 ; i < boids.size(); i++) {
@@ -220,7 +220,7 @@ ofVec2f Boid::align(vector<Boid> &boids) {
 // Cohesion
 // For the average location (i.e. center) of all nearby boids, calculate steering vector towards that location
 ofVec2f Boid::cohesion(vector<Boid> &boids) {
-    float neighbordist = 50.0;
+    float neighbordist = cohesionDistance;
     ofVec2f sum;   // Start with empty vector to accumulate all locations
     int count = 0;
     for (int i = 0 ; i < boids.size(); i++) {

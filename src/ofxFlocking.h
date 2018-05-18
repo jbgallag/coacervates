@@ -17,7 +17,7 @@
 class ofxFlocking {
 public:
 	void update();
-	void draw();
+    void draw();
 	void addBoid();
 	void addBoid(int x, int y);
     void removeBoid(int x, int y, int radius);

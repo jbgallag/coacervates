@@ -21,7 +21,7 @@ public:
 	Boid(int x, int y);
 	
 	void update(vector<Boid> &boids);
-	void draw();
+    void draw();
 	
     void seek(ofVec2f target);
     void avoid(ofVec2f target);
@@ -43,9 +43,16 @@ public:
 	float maxspeed;
 
     float dispXOff = 192;
-    float dispYOff = 192;
+    float dispYOff = 216;
     float vWidth = 768;
     float vHeight = 768;
+
+    float cohesionDistance,alignDistance,seperateDistance;
+
+    inline void setCohesionDistance(float cd) {cohesionDistance = cd;}
+    inline void setAlignDistance(float ad) {alignDistance = ad;}
+    inline void setSeperateDistance(float sd) {seperateDistance = sd;}
+
 };
 
 #endif

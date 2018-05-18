@@ -95,10 +95,16 @@ void ofApp::load_model(string model_dir)
 }
 //--------------------------------------------------------------
 void ofApp::draw(){
-    if(flock.boids.size() > 0)
+    if(flock.boids.size() > 0) {
+        for(size_t i = 0; i<flock.boids.size(); i++) {
+            flock.boids[i].setSeperateDistance(separateDistance);
+            flock.boids[i].setCohesionDistance(cohesionDistance);
+            flock.boids[i].setAlignDistance(alignDistance);
+        }
         flock.update();
-    //drawGUI();
-    //ofPushMatrix();
+    }
+    drawGUI();
+
     drawFBO.begin();
     ofClear(0,0,0);
     drawFBO.end();
@@ -106,29 +112,39 @@ void ofApp::draw(){
     //ofPushMatrix();
     //ofSetLineWidth(20);
     //for(auto &pline: polyLines) {
-     //   pline.draw();
-    //}
-    
+    //    pline.draw();
+   // }
+    flock.draw();
    // if(rsampPline) {
+    /*for(size_t i = 0; i<flock.boids.size(); i++) {
+        ofPushMatrix();
+        ofTranslate(flock.boids[i].loc.x,flock.boids[i].loc.y);
+        drawReSampledPolylines(rpolyLines[i],0,0);
+        ofPopMatrix();
+    }*/
+    /*if(flock.boids.size() > 0) {
         size_t cnt = 0;
-        for(auto &pline: rpolyLines) {
+        for(size_t i = 0; i<rpolyLines.size(); i++) {
 
-            if(flock.boids.size() > 0) {
-               // ofPushMatrix();
-               // ofTranslate({flock.boids[cnt].loc.x,flock.boids[cnt].loc.y});
+            //if(flock.boids.size() > 0) {
+                ofPushMatrix();
+                //ofTranslate(flock.boids[cnt].lastLoc.x-dispXOff,flock.boids[cnt].lastLoc.y-dispYOff);
 
-                drawReSampledPolylines(pline,flock.boids[cnt].loc.x-dispXOff,flock.boids[cnt].loc.y-dispYOff);
+                drawReSampledPolylines(rpolyLines[i],flock.boids[cnt].lastLoc.x,flock.boids[cnt].lastLoc.y);
+               // ofTranslate(-1.0*flock.boids[cnt].lastLoc.x-dispXOff,-1.0*flock.boids[cnt].lastLoc.y-dispYOff);
+               // ofTranslate(-dispXOff,-dispYOff);
+                ofPopMatrix();
+             //   printf("FLOCK_LOX: %d %f %f\n",cnt,flock.boids[cnt].loc.x,flock.boids[cnt].loc.y);
+                printf("FLOCK_LOX: %d %f %f\n",cnt,flock.boids[cnt].lastLoc.x,flock.boids[cnt].lastLoc.y);
                 cnt++;
-               // ofPopMatrix();
-              //  printf("FLOCK_LOX: %f %f\n",flock.boids[cnt].loc.x,flock.boids[cnt].loc.y);
             }
            // drawReSampledPolylines(pline);
 
             //cnt++;
         }
-   // }
+   // }*/
 
-   // flock.draw();
+
    // ofPopMatrix();
     drawFBO.end();
     drawFBO.draw(dispXOff,dispYOff);
@@ -146,48 +162,22 @@ void ofApp::draw(){
     drawImage.setFromPixels(outImage.getPixels());
     drawImage.resize(vWidth,vHeight);
     drawImage.draw(dispXOff+vWidth,dispYOff);
-    //outImage.resize(vWidth,vHeight);
-    //outImage.update();
-    //outImage.resize(vWidth,vHeight);
-    //outImage.update();
-   // outImage.draw(dispXOff+vWidth,dispYOff);
-    //read the draw FBO then break up into segSizeX*segSizeY images
-    /*size_t cpIdx = 0;
-    for(size_t y=0; y<segSizeY; y++) {
-        for(size_t x=0; x<segSizeX; x++) {
-            size_t startX = x*crpX;
-            size_t startY = y*crpY;
-            coaIn[cpIdx].cropFrom(drawImage, startX, startY, crpX, crpY);
-            cpIdx++;
-        }
-    }*/
-
-    /*cpIdx = 0;
-    for(size_t y = 0; y<segSizeY; y++) {
-        for(size_t x = 0; x<segSizeX; x++) {
-            float xStart = x*crpX + dispXOff + vWidth;
-            float yStart = y*crpY + dispYOff;
-
-            model.run_image_to_image(coaIn[cpIdx],coaOut[cpIdx], input_range, output_range);
-            coaOut[cpIdx].resize(vWidth,vHeight);
-            coaOut[cpIdx].draw(xStart,yStart);
-            cpIdx++;
-        }
-    }*/
 
 
 }
 
 void ofApp::drawReSampledPolylines(ofPolyline &resampledPoly, int tx, int ty)
 {
-    ofPushMatrix();
-    ofTranslate(tx,ty);
+  //  ofPushMatrix();
+    //ofTranslate(-dispXOff,-dispYOff);
+   // ofTranslate(tx-dispXOff*2,ty-dispYOff);
     //ofDrawRectangle(0, 0, ofGetWidth() / 2, ofGetHeight());
     
     
     // Draw the resampled polyline in yellow.
     //ofSetColor(ofColor::yellow);
     resampledPoly.draw();
+   // ofPopMatrix();
     // Draw its vertices.
    // ofSetColor(255, 255, 127);
    // for (auto vertex: resampledPoly.getVertices())
@@ -197,7 +187,7 @@ void ofApp::drawReSampledPolylines(ofPolyline &resampledPoly, int tx, int ty)
     
    // ofSetColor(255);
    // ofDrawBitmapString("Resampled by Spacing", 14, ofGetHeight() - 14);
-    
+    //ofPushMatrix();
     float time = ofGetElapsedTimef();
     size_t stride = (size_t)ofRandom(1,strideRange);
     for (std::size_t i = 0; i < resampledPoly.size(); i=i+stride)
@@ -223,16 +213,19 @@ void ofApp::drawReSampledPolylines(ofPolyline &resampledPoly, int tx, int ty)
         ofDrawCircle(negativeNormalVertexOffset, scaling /ofRandom(1,radiusRange));
         ofDrawLine(vertex, negativeNormalVertexOffset);
     }
-    ofPopMatrix();
+  //  ofPopMatrix();
+    //ofTranslate(dispXOff,dispYOff);
 }
 
 void ofApp::setupGUI()
 {
     rangeGui.setup();
     rangeGui.setPosition(50,50);
-    rangeGui.add(strideRange.set("Stride Range",1,1,5));
-    rangeGui.add(scaleRange.set("Scale Range",25,25,100));
-    rangeGui.add(radiusRange.set("radius range",1,1,5));
+    rangeGui.add(separateDistance.set("Separation",50,1,500));
+    rangeGui.add(alignDistance.set("Align",50,1,500));
+    rangeGui.add(cohesionDistance.set("Cohesion",50,1,500));
+    //rangeGui.add(scaleRange.set("Scale Range",25,25,100));
+    //rangeGui.add(radiusRange.set("radius range",1,1,5));
 
 }
 
@@ -290,29 +283,30 @@ void ofApp::mouseMoved(int x, int y ){
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-    polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
+    //polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
+    flock.addBoid(x-dispXOff,y-dispYOff);
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
 
-    ofPolyline pLine;
-    ofPolyline rpLine;
-    polyLines.push_back(pLine);
-    rpolyLines.push_back(rpLine);
-    polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
+   // ofPolyline pLine;
+   // ofPolyline rpLine;
+  //  polyLines.push_back(pLine);
+  //  rpolyLines.push_back(rpLine);
+  //  polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
 
-    polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
-    if(closePline)
-        polyLines[polyLines.size()-1].close();
-    if(rsampPline) {
-        rpolyLines[rpolyLines.size()-1] = polyLines[polyLines.size()-1].getResampledBySpacing(20);
-        flock.addBoid(rpolyLines[rpolyLines.size()-1].getCentroid2D().x,rpolyLines[rpolyLines.size()-1].getCentroid2D().y);
-    }
+  //  polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
+  //  if(closePline)
+   //     polyLines[polyLines.size()-1].close();
+  //  if(rsampPline) {
+  //      rpolyLines[rpolyLines.size()-1] = polyLines[polyLines.size()-1].getResampledBySpacing(20);
+  //      flock.addBoid(rpolyLines[rpolyLines.size()-1].getCentroid2D().x,rpolyLines[rpolyLines.size()-1].getCentroid2D().y);
+  //  }
     
     
 }

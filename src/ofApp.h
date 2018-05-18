@@ -88,6 +88,10 @@ public:
     int startCount = 6;
     ofxFlocking flock;
 
+    ofParameter<float>cohesionDistance;
+    ofParameter<float>alignDistance;
+    ofParameter<float>separateDistance;
+
 
 
 };
