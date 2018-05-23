@@ -33,7 +33,11 @@ public:
     //for loading tensorflow model
     void load_model(string model_dir);
     void load_model_index(int index);
+
+    void drawFlockingPolylines();
     void drawReSampledPolylines(ofPolyline &resampledPoly, int tx, int ty);
+
+    string getImageFileName(int cnt);
     //tensorflow constants
     const int input_shape[2] = {256, 256}; // dimensions {height, width} for input image
     const int output_shape[2] = {256, 256}; // dimensions {height, width} for output image
@@ -58,6 +62,8 @@ public:
     ofFloatImage outImage;
     ofImage dispImage;
     ofImage drawImage;
+
+    ofImage testImage,testImageTwo;
     size_t segSizeX,segSizeY,crpX,crpY;
     int vWidth,vHeight;
 
@@ -85,14 +91,34 @@ public:
 
     ofxPanel rangeGui;
 
+
+
     int startCount = 6;
     ofxFlocking flock;
 
+
+    ofxPanel freeDrawGui;
+    ofParameter<bool>freeDraw;
+    ofParameter<float>fdLineWidth;
+    ofParameter<bool>closePolyline;
+
+    ofxPanel flockDrawGui;
+    ofParameter<bool>flockDraw;
     ofParameter<float>cohesionDistance;
     ofParameter<float>alignDistance;
     ofParameter<float>separateDistance;
     ofParameter<float>maxSpeed;
 
+    ofParameter<bool>drawTestImage;
+    bool drawTest;
+    void ToggleDrawTestImage(bool &pressed);
 
+    float scaleOsc;
+    int scaleCount;
+    int scaleCountMax;
+
+    int frameCount;
+    int frameCountMax;
+    int frameCountOffset;
 
 };

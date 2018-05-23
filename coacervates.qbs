@@ -3,10 +3,10 @@ import qbs.Process
 import qbs.File
 import qbs.FileInfo
 import qbs.TextFile
-import "/home/ats/Desktop/openFrameworks/libs/openFrameworksCompiled/project/qtcreator/ofApp.qbs" as ofApp
+import "/home/jbgallag/openFrameworks/libs/openFrameworksCompiled/project/qtcreator/ofApp.qbs" as ofApp
 
 Project{
-    property string of_root: '/home/ats/Desktop/openFrameworks'
+    property string of_root: '/home/jbgallag/openFrameworks'
 
     ofApp {
         name: { return FileInfo.baseName(sourceDirectory) }
@@ -15,10 +15,6 @@ Project{
             'src/main.cpp',
             'src/ofApp.cpp',
             'src/ofApp.h',
-            'src/ofxBoid.cpp',
-            'src/ofxBoid.h',
-            'src/ofxFlocking.cpp',
-            'src/ofxFlocking.h',
         ]
 
         // This project is using addons.make to include the addons

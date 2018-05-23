@@ -24,7 +24,7 @@ Boid::Boid(int x, int y) {
     loc.set(x,y);
 	vel.set(0,0);
 	acc.set(0,0);
-    r = 3.0;
+    r = 15.0;
     maxspeed = 1.5;
     maxforce = 1.1;
 
@@ -99,7 +99,7 @@ void Boid::draw() {
 	float heading2D = ofRadToDeg(theta)+90;
 	
 	ofPushStyle();
-    ofFill();
+    ofNoFill();
     ofPushMatrix();
     ofTranslate(loc.x, loc.y);
     ofRotateZ(heading2D);

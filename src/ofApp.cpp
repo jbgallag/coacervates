@@ -3,7 +3,9 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     //set video w/h
-    ofBackground(30);
+    ofBackground(0);
+    ofEnableAlphaBlending();
+    ofEnableBlendMode(OF_BLENDMODE_SCREEN);
     vWidth = 768;
     vHeight = 768;
 
@@ -26,6 +28,10 @@ void ofApp::setup(){
     outImage.allocate(crpX,crpY,OF_IMAGE_COLOR);
     inImage.allocate(crpX,crpY,OF_IMAGE_COLOR);
 
+    testImage.allocate(crpX,crpY,OF_IMAGE_COLOR);
+    testImageTwo.allocate(crpX,crpY,OF_IMAGE_COLOR);
+
+   // testImage.load("0618.png");
     drawImage.allocate(vWidth,vHeight,OF_IMAGE_COLOR);
     /*for(size_t y=0; y<segSizeY; y++) {
         for(size_t x=0; x<segSizeX; x++) {
@@ -51,13 +57,23 @@ void ofApp::setup(){
     models_dir.sort();
     load_model_index(0); // load first model
 
+
+    drawTest = true;
+    scaleOsc = 1.0;
+    scaleCount = 0;
+    scaleCountMax = 2000;
+
+    frameCount = 1;
+    frameCountMax = 2312;
+    frameCountOffset = ofRandom(100,1500);
     setupGUI();
     //for (int i = startCount; i > 0; i--) {
      //       flock.addBoid();
      //   }
 
 
-    //setup flock
+    freeDraw = true;
+    flockDraw = false;
 
 
 }
@@ -95,27 +111,60 @@ void ofApp::load_model(string model_dir)
 }
 //--------------------------------------------------------------
 void ofApp::draw(){
-    if(flock.boids.size() > 0) {
-        for(size_t i = 0; i<flock.boids.size(); i++) {
-            flock.boids[i].setSeperateDistance(separateDistance);
-            flock.boids[i].setCohesionDistance(cohesionDistance);
-            flock.boids[i].setAlignDistance(alignDistance);
-            flock.boids[i].setMaxSpeed(maxSpeed);
-        }
-        flock.update();
-    }
+
     drawGUI();
 
     drawFBO.begin();
     ofClear(0,0,0);
     drawFBO.end();
     drawFBO.begin();
-    //ofPushMatrix();
-    //ofSetLineWidth(20);
-    //for(auto &pline: polyLines) {
-    //    pline.draw();
-   // }
-    flock.draw();
+  /*  if(drawTestImage) {
+            testImage.clear();
+            testImage.load(getImageFileName(frameCount));
+            testImage.resize(vWidth,vHeight);
+            testImage.draw(0,0);
+            testImageTwo.clear();
+            testImageTwo.load(getImageFileName(frameCount+frameCountOffset));
+            testImageTwo.resize(vWidth,vHeight);
+            testImageTwo.draw(0,0);
+            frameCount++;
+            if((frameCount + frameCountOffset) > frameCountMax) {
+                frameCount = ofRandom(100,500);
+                frameCountOffset = ofRandom(100,1500);
+            }
+
+    }*/
+
+    if(freeDraw) {
+        ofPushStyle();
+        ofSetColor(175);
+        ofSetLineWidth(fdLineWidth);
+        for(auto &pline: polyLines) {
+            pline.draw();
+        }
+        ofPopStyle();
+    }
+
+    if(flockDraw) {
+        //draw pline while available
+        for(auto &pline: polyLines) {
+            pline.draw();
+        }
+        if(flock.boids.size() > 0) {
+            for(size_t i = 0; i<flock.boids.size(); i++) {
+                flock.boids[i].setSeperateDistance(separateDistance);
+                flock.boids[i].setCohesionDistance(cohesionDistance);
+                flock.boids[i].setAlignDistance(alignDistance);
+                flock.boids[i].setMaxSpeed(maxSpeed);
+            }
+            flock.update();
+        }
+        flock.draw();
+        if(flock.boids.size() > 0)
+            drawFlockingPolylines();
+    }
+   // ofPopMatrix();
+   // flock.draw();
    // if(rsampPline) {
     /*for(size_t i = 0; i<flock.boids.size(); i++) {
         ofPushMatrix();
@@ -145,7 +194,9 @@ void ofApp::draw(){
         }
    // }*/
 
-
+   // for(auto &pline: rpolyLines) {
+    //    drawReSampledPolylines(pline,0,0);
+  //  }
    // ofPopMatrix();
     drawFBO.end();
     drawFBO.draw(dispXOff,dispYOff);
@@ -167,6 +218,24 @@ void ofApp::draw(){
 
 }
 
+void ofApp::drawFlockingPolylines()
+{
+    size_t b_cnt = 0;
+    for(size_t i = 0; i<rpolyLines.size(); i++) {
+        //calculate distance between centroid and boid, store vetexes
+        vector<glm::vec3> rpLineVerts = rpolyLines[i].getVertices();
+        glm::vec3 center = rpolyLines[i].getCentroid2D();
+        //clear this polyline and add new verts
+        rpolyLines[i].clear();
+        float xOffset = flock.boids[b_cnt].lastLoc.x - center.x;
+        float yOffset = flock.boids[b_cnt].lastLoc.y - center.y;
+        for(auto vrtx: rpLineVerts) {
+            rpolyLines[i].addVertex(vrtx.x+xOffset,vrtx.y+yOffset);
+        }
+        drawReSampledPolylines(rpolyLines[i],0,0);
+        b_cnt++;
+    }
+}
 void ofApp::drawReSampledPolylines(ofPolyline &resampledPoly, int tx, int ty)
 {
   //  ofPushMatrix();
@@ -188,13 +257,13 @@ void ofApp::drawReSampledPolylines(ofPolyline &resampledPoly, int tx, int ty)
     
    // ofSetColor(255);
    // ofDrawBitmapString("Resampled by Spacing", 14, ofGetHeight() - 14);
-    //ofPushMatrix();
+    ofPushMatrix();
     float time = ofGetElapsedTimef();
-    size_t stride = (size_t)ofRandom(1,strideRange);
+    size_t stride = (size_t)ofRandom(1,1);
     for (std::size_t i = 0; i < resampledPoly.size(); i=i+stride)
     {
         float phase = ofMap(i, 0, resampledPoly.size(), 0, glm::pi<float>());
-        float scaling = ofRandom(25,scaleRange) * sin(time + phase);
+        float scaling = ofRandom(25,50) * sin(time + phase);
         
         // The normal is a normalized vector representing the "Normal" direction.
         glm::vec3 theNormal = resampledPoly.getNormalAtIndex(i);
@@ -207,33 +276,71 @@ void ofApp::drawReSampledPolylines(ofPolyline &resampledPoly, int tx, int ty)
         
         ofNoFill();
         //ofSetColor(255, 80);
-        ofDrawCircle(positiveNormalVertexOffset, scaling / ofRandom(1,radiusRange));
+        ofDrawCircle(positiveNormalVertexOffset, scaling / 8);
         ofDrawLine(vertex, positiveNormalVertexOffset);
         
         //ofSetColor(255, 0, 0, 80);
-        ofDrawCircle(negativeNormalVertexOffset, scaling /ofRandom(1,radiusRange));
+        ofDrawCircle(negativeNormalVertexOffset, scaling / 8);
         ofDrawLine(vertex, negativeNormalVertexOffset);
     }
-  //  ofPopMatrix();
+    ofPopMatrix();
     //ofTranslate(dispXOff,dispYOff);
 }
 
 void ofApp::setupGUI()
 {
-    rangeGui.setup();
-    rangeGui.setPosition(50,50);
-    rangeGui.add(separateDistance.set("Separation",25,1,50));
-    rangeGui.add(alignDistance.set("Align",25,1,50));
-    rangeGui.add(cohesionDistance.set("Cohesion",25,1,50));
-    rangeGui.add(maxSpeed.set("Max Speed",1.5,0.5,25.0));
+
+    freeDrawGui.setup();
+    freeDrawGui.setPosition(50,50);
+    freeDraw.setName("Free Draw");
+    freeDrawGui.add(freeDraw.set("Free Draw"));
+    freeDrawGui.add(fdLineWidth.set("Line Width", 3.0, 1.0, 6.0));
+    closePolyline.setName("Close Polyline");
+    freeDrawGui.add(closePolyline.set("Close Polyline"));
+
+    flockDrawGui.setup();
+    flockDrawGui.setPosition(freeDrawGui.getWidth(), 50);
+    flockDraw.setName("Flock Draw");
+    flockDrawGui.add(flockDraw.set("Flock Draw"));
+    flockDrawGui.add(separateDistance.set("Separation",25,1,250));
+    flockDrawGui.add(alignDistance.set("Align",25,1,250));
+    flockDrawGui.add(cohesionDistance.set("Cohesion",25,1,250));
+    flockDrawGui.add(maxSpeed.set("Max Speed",1.5,0.5,25.0));
+   // drawTestImage.addListener(this, &ofApp::ToggleDrawTestImage);
+    //drawTestImage.setName("TestImage");
+   // rangeGui.add(drawTestImage.set("TestImage"));
     //rangeGui.add(scaleRange.set("Scale Range",25,25,100));
     //rangeGui.add(radiusRange.set("radius range",1,1,5));
 
 }
 
+void ofApp::ToggleDrawTestImage(bool &pressed)
+{
+    printf("IN PRESS: %d %d\n",pressed,drawTest);
+    if(drawTest) {
+        drawTest = false;
+    } else {
+        drawTest = true;
+    }
+    //drawTest = drawTest ? false : true;
+}
+
 void ofApp::drawGUI()
 {
-    rangeGui.draw();
+   freeDrawGui.draw();
+   flockDrawGui.draw();
+}
+
+string ofApp::getImageFileName(int cnt)
+{
+    string fname;
+    char prefix[4];
+    sprintf(prefix,"%04d",cnt);
+    fname.append("images/");
+    fname.append(prefix);
+    fname.append(".jpg.png");
+
+    return fname;
 }
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
@@ -285,32 +392,44 @@ void ofApp::mouseMoved(int x, int y ){
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-    //polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
-    flock.addBoid(x-dispXOff,y-dispYOff);
+    if(freeDraw || flockDraw) {
+        polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
+    }
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
 
-   // ofPolyline pLine;
-   // ofPolyline rpLine;
-  //  polyLines.push_back(pLine);
-  //  rpolyLines.push_back(rpLine);
-  //  polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
+    if(freeDraw || flockDraw) {
+        ofPolyline pLine;
+        polyLines.push_back(pLine);
+        polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
+    }
+    if(flockDraw) {
+        //polyline for resampling
+        ofPolyline rpLine;
+        rpolyLines.push_back(rpLine);
+    }
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
 
-  //  polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
-  //  if(closePline)
-   //     polyLines[polyLines.size()-1].close();
-  //  if(rsampPline) {
-  //      rpolyLines[rpolyLines.size()-1] = polyLines[polyLines.size()-1].getResampledBySpacing(20);
-  //      flock.addBoid(rpolyLines[rpolyLines.size()-1].getCentroid2D().x,rpolyLines[rpolyLines.size()-1].getCentroid2D().y);
-  //  }
-    
-    
+    if(freeDraw) {
+        polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
+        if(closePolyline)
+            polyLines[polyLines.size()-1].close();
+    }
+    if(flockDraw) {
+        polyLines[polyLines.size()-1].addVertex(x-dispXOff,y-dispYOff);
+        //must close polyline
+        polyLines[polyLines.size()-1].close();
+        rpolyLines[rpolyLines.size()-1] = polyLines[polyLines.size()-1].getResampledBySpacing(20);
+        //add a boid at centroid of closed resampled pline
+        flock.addBoid(rpolyLines[rpolyLines.size()-1].getCentroid2D().x,rpolyLines[rpolyLines.size()-1].getCentroid2D().y);
+        //pop_back polyline
+        polyLines.pop_back();
+    }
 }
 
 //--------------------------------------------------------------
