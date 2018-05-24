@@ -33,9 +33,13 @@ public:
     //for loading tensorflow model
     void load_model(string model_dir);
     void load_model_index(int index);
+    void load_modelTwo(string model_dir);
+    void load_model_indexTwo(int index);
 
     void drawFlockingPolylines();
     void drawReSampledPolylines(ofPolyline &resampledPoly, int tx, int ty);
+    void ToggleFreeDrawMode(bool &pressed);
+    void ToggleFlockDrawMode(bool &pressed);
 
     string getImageFileName(int cnt);
     //tensorflow constants
@@ -47,6 +51,7 @@ public:
     const string output_op_name = "generator/generator_outputs"; // name of op to fetch output from
 
     msa::tf::SimpleModel model;
+    msa::tf::SimpleModel modelTwo;
     ofVideoGrabber videoFeed;
     std::vector<ofImage> captures;
     std::vector<ofImage> prevCaptures;
@@ -63,6 +68,12 @@ public:
     ofImage dispImage;
     ofImage drawImage;
 
+    ofFloatImage inImageTwo;
+    ofFloatImage outImageTwo;
+    ofImage dispImageTwo;
+    ofImage dispImageThree;
+    ofImage drawImageTwo;
+
     ofImage testImage,testImageTwo;
     size_t segSizeX,segSizeY,crpX,crpY;
     int vWidth,vHeight;
@@ -73,6 +84,7 @@ public:
 
     ofFbo combFBO;
     ofFbo drawFBO;
+    ofFbo drawFBOTwo;
 
     bool closePline = false;
     bool rsampPline = false;

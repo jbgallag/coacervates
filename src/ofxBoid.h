@@ -44,7 +44,7 @@ public:
 
     float dispXOff = 192;
     float dispYOff = 216;
-    float vWidth = 768;
+    float vWidth = 1536;
     float vHeight = 768;
 
     float cohesionDistance,alignDistance,seperateDistance;

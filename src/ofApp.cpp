@@ -6,7 +6,7 @@ void ofApp::setup(){
     ofBackground(0);
     ofEnableAlphaBlending();
     ofEnableBlendMode(OF_BLENDMODE_SCREEN);
-    vWidth = 768;
+    vWidth = 1536;
     vHeight = 768;
 
     dispXOff = 192;
@@ -24,15 +24,21 @@ void ofApp::setup(){
     rsampPline = true;
     closePline = true;
 
-    dispImage.allocate(crpX,crpY,OF_IMAGE_COLOR);
+    dispImage.allocate(vWidth,vHeight,OF_IMAGE_COLOR);
     outImage.allocate(crpX,crpY,OF_IMAGE_COLOR);
     inImage.allocate(crpX,crpY,OF_IMAGE_COLOR);
+
+    dispImageTwo.allocate(crpX,crpY,OF_IMAGE_COLOR);
+    dispImageThree.allocate(crpX,crpY,OF_IMAGE_COLOR);
+    outImageTwo.allocate(crpX,crpY,OF_IMAGE_COLOR);
+    inImageTwo.allocate(crpX,crpY,OF_IMAGE_COLOR);
 
     testImage.allocate(crpX,crpY,OF_IMAGE_COLOR);
     testImageTwo.allocate(crpX,crpY,OF_IMAGE_COLOR);
 
    // testImage.load("0618.png");
-    drawImage.allocate(vWidth,vHeight,OF_IMAGE_COLOR);
+    drawImage.allocate(vWidth/2,vHeight,OF_IMAGE_COLOR);
+    drawImageTwo.allocate(vWidth/2,vHeight,OF_IMAGE_COLOR);
     /*for(size_t y=0; y<segSizeY; y++) {
         for(size_t x=0; x<segSizeX; x++) {
             ofFloatImage inImg,outImg;
@@ -46,7 +52,8 @@ void ofApp::setup(){
         }
     }*/
 
-    drawFBO.allocate(vWidth,vHeight, GL_RGB);
+    drawFBO.allocate(vWidth*2,vHeight, GL_RGB);
+   // drawFBOTwo.allocate(vWidth,vHeight, GL_RGB);
     //load tensorflow model
     models_dir.listDir("models");
     if(models_dir.size()==0) {
@@ -56,7 +63,7 @@ void ofApp::setup(){
     }
     models_dir.sort();
     load_model_index(0); // load first model
-
+    load_model_indexTwo(6);
 
     drawTest = true;
     scaleOsc = 1.0;
@@ -82,6 +89,10 @@ void ofApp::load_model_index(int index) {
     load_model(models_dir.getPath(cur_model_index));
 }
 
+void ofApp::load_model_indexTwo(int index) {
+    cur_model_index = ofClamp(index, 0, models_dir.size()-1);
+    load_modelTwo(models_dir.getPath(cur_model_index));
+}
 
 //--------------------------------------------------------------
 void ofApp::update(){
@@ -106,6 +117,27 @@ void ofApp::load_model(string model_dir)
     // init tensor for input. shape should be: {batch size, image height, image width, number of channels}
     // (ideally the SimpleModel graph loader would read this info from the graph_def and call this internally)
     model.init_inputs(tensorflow::DT_FLOAT, {1, input_shape[0], input_shape[1], 3});
+    tfRdy = true;
+    printf("DONE WITH TENSORFLOW INIT!!! %s %s\n",model_dir.c_str(),ofFilePath::join(model_dir, "/graph_frz.pb").c_str());
+}
+
+void ofApp::load_modelTwo(string model_dir)
+{
+    ofLogVerbose() << "loading model " << model_dir;
+
+    // init the model
+    // note that it expects arrays for input op names and output op names, so just use {}
+    modelTwo.setup(ofFilePath::join(model_dir, "/graph_frz.pb"), {input_op_name}, {output_op_name});
+    if(! modelTwo.is_loaded()) {
+        ofLogError() << "Model init error.";
+        ofLogError() << msa::tf::missing_data_error();
+        assert(false);
+        ofExit(1);
+    }
+
+    // init tensor for input. shape should be: {batch size, image height, image width, number of channels}
+    // (ideally the SimpleModel graph loader would read this info from the graph_def and call this internally)
+    modelTwo.init_inputs(tensorflow::DT_FLOAT, {1, input_shape[0], input_shape[1], 3});
     tfRdy = true;
     printf("DONE WITH TENSORFLOW INIT!!! %s %s\n",model_dir.c_str(),ofFilePath::join(model_dir, "/graph_frz.pb").c_str());
 }
@@ -199,22 +231,37 @@ void ofApp::draw(){
   //  }
    // ofPopMatrix();
     drawFBO.end();
-    drawFBO.draw(dispXOff,dispYOff);
+   // drawFBO.draw(dispXOff,dispYOff);
    // ofPopMatrix();
+
 
 
     drawFBO.readToPixels(dispImage.getPixels());
     dispImage.update();
-    dispImage.resize(crpX,crpY);
+
+    dispImageTwo.cropFrom(dispImage,0,0,vWidth/2,vHeight);
+    dispImageThree.cropFrom(dispImage,vWidth/2,0,vWidth/2,vHeight);
+
+    dispImageTwo.resize(crpX,crpY);
+    dispImageThree.resize(crpX,crpY);
     //dispImage.draw(0,0);
 
-    inImage.setFromPixels(dispImage.getPixels());
+    inImage.setFromPixels(dispImageTwo.getPixels());
     inImage.update();
-    model.run_image_to_image(inImage,outImage, input_range, output_range);
-    drawImage.setFromPixels(outImage.getPixels());
-    drawImage.resize(vWidth,vHeight);
-    drawImage.draw(dispXOff+vWidth,dispYOff);
 
+    inImageTwo.setFromPixels(dispImageThree.getPixels());
+    inImageTwo.update();
+
+    model.run_image_to_image(inImage,outImage, input_range, output_range);
+    modelTwo.run_image_to_image(inImageTwo,outImageTwo, input_range, output_range);
+
+    drawImage.setFromPixels(outImage.getPixels());
+    drawImage.resize(vWidth/2,vHeight);
+    drawImage.draw(dispXOff,dispYOff);
+
+    drawImageTwo.setFromPixels(outImageTwo.getPixels());
+    drawImageTwo.resize(vWidth/2,vHeight);
+    drawImageTwo.draw(dispXOff+(vWidth/2),dispYOff);
 
 }
 
@@ -293,6 +340,7 @@ void ofApp::setupGUI()
     freeDrawGui.setup();
     freeDrawGui.setPosition(50,50);
     freeDraw.setName("Free Draw");
+    freeDraw.addListener(this, &ofApp::ToggleFreeDrawMode);
     freeDrawGui.add(freeDraw.set("Free Draw"));
     freeDrawGui.add(fdLineWidth.set("Line Width", 3.0, 1.0, 6.0));
     closePolyline.setName("Close Polyline");
@@ -301,6 +349,7 @@ void ofApp::setupGUI()
     flockDrawGui.setup();
     flockDrawGui.setPosition(freeDrawGui.getWidth(), 50);
     flockDraw.setName("Flock Draw");
+    flockDraw.addListener(this, &ofApp::ToggleFlockDrawMode);
     flockDrawGui.add(flockDraw.set("Flock Draw"));
     flockDrawGui.add(separateDistance.set("Separation",25,1,250));
     flockDrawGui.add(alignDistance.set("Align",25,1,250));
@@ -313,6 +362,23 @@ void ofApp::setupGUI()
     //rangeGui.add(radiusRange.set("radius range",1,1,5));
 
 }
+
+void ofApp::ToggleFreeDrawMode(bool &pressed)
+{
+    if(pressed) {
+        //make sure flockDraw is off
+        flockDraw = false;
+    }
+}
+
+void ofApp::ToggleFlockDrawMode(bool &pressed)
+{
+    if(pressed) {
+        //make sure flockDraw is off
+        freeDraw = false;
+    }
+}
+
 
 void ofApp::ToggleDrawTestImage(bool &pressed)
 {
