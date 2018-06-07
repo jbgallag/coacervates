@@ -6,6 +6,7 @@ void ofApp::setup(){
     ofBackground(0);
     ofEnableAlphaBlending();
     ofEnableBlendMode(OF_BLENDMODE_SCREEN);
+    //ofSetFrameRate(10);
     vWidth = 1536;
     vHeight = 768;
 
@@ -36,7 +37,7 @@ void ofApp::setup(){
     testImage.allocate(crpX,crpY,OF_IMAGE_COLOR);
     testImageTwo.allocate(crpX,crpY,OF_IMAGE_COLOR);
 
-   // testImage.load("0618.png");
+    testImage.load("0000.png");
     drawImage.allocate(vWidth/2,vHeight,OF_IMAGE_COLOR);
     drawImageTwo.allocate(vWidth/2,vHeight,OF_IMAGE_COLOR);
     /*for(size_t y=0; y<segSizeY; y++) {
@@ -63,7 +64,7 @@ void ofApp::setup(){
     }
     models_dir.sort();
     load_model_index(0); // load first model
-    load_model_indexTwo(6);
+    load_model_indexTwo(1);
 
     drawTest = true;
     scaleOsc = 1.0;
@@ -79,8 +80,11 @@ void ofApp::setup(){
      //   }
 
 
-    freeDraw = true;
+    freeDraw = false;
     flockDraw = false;
+
+    drawTestImage = true;
+    reloadImage = false;
 
 
 }
@@ -146,6 +150,7 @@ void ofApp::draw(){
 
     drawGUI();
 
+    if(!drawTestImage) {
     drawFBO.begin();
     ofClear(0,0,0);
     drawFBO.end();
@@ -262,6 +267,17 @@ void ofApp::draw(){
     drawImageTwo.setFromPixels(outImageTwo.getPixels());
     drawImageTwo.resize(vWidth/2,vHeight);
     drawImageTwo.draw(dispXOff+(vWidth/2),dispYOff);
+    } else {
+        inImage.setFromPixels(testImage.getPixels());
+        inImage.update();
+
+        model.run_image_to_image(inImage,outImage, input_range, output_range);
+        drawImage.setFromPixels(outImage.getPixels());
+        drawImage.resize(vWidth/2,vHeight);
+        drawImage.draw(dispXOff,dispYOff);
+
+        testImage.setFromPixels(outImage.getPixels());
+    }
 
 }
 
@@ -321,7 +337,7 @@ void ofApp::drawReSampledPolylines(ofPolyline &resampledPoly, int tx, int ty)
         glm::vec3 positiveNormalVertexOffset = vertex + theScaledNormal;
         glm::vec3 negativeNormalVertexOffset = vertex - theScaledNormal;
         
-        ofNoFill();
+        ofFill();
         //ofSetColor(255, 80);
         ofDrawCircle(positiveNormalVertexOffset, scaling / 8);
         ofDrawLine(vertex, positiveNormalVertexOffset);
@@ -355,7 +371,16 @@ void ofApp::setupGUI()
     flockDrawGui.add(alignDistance.set("Align",25,1,250));
     flockDrawGui.add(cohesionDistance.set("Cohesion",25,1,250));
     flockDrawGui.add(maxSpeed.set("Max Speed",1.5,0.5,25.0));
-   // drawTestImage.addListener(this, &ofApp::ToggleDrawTestImage);
+
+    sciVizGui.setup();
+    sciVizGui.setPosition(flockDrawGui.getWidth()+freeDrawGui.getWidth(), 50);
+    drawTestImage.setName("VizSim");
+    drawTestImage.addListener(this, &ofApp::ToggleDrawTestImage);
+    sciVizGui.add(drawTestImage.set("VizSim"));
+    reloadImage.setName("Reload Seed Image");
+    reloadImage.addListener(this, &ofApp::ToggleReloadSeedImage);
+    sciVizGui.add(reloadImage.set("Reload Seed Image"));
+    // drawTestImage.addListener(this, &ofApp::ToggleDrawTestImage);
     //drawTestImage.setName("TestImage");
    // rangeGui.add(drawTestImage.set("TestImage"));
     //rangeGui.add(scaleRange.set("Scale Range",25,25,100));
@@ -368,6 +393,7 @@ void ofApp::ToggleFreeDrawMode(bool &pressed)
     if(pressed) {
         //make sure flockDraw is off
         flockDraw = false;
+        drawTestImage = false;
     }
 }
 
@@ -375,6 +401,15 @@ void ofApp::ToggleFlockDrawMode(bool &pressed)
 {
     if(pressed) {
         //make sure flockDraw is off
+        freeDraw = false;
+        drawTestImage = false;
+    }
+}
+
+void ofApp::ToggleSciVizMode(bool &pressed)
+{
+    if(pressed) {
+        flockDraw = false;
         freeDraw = false;
     }
 }
@@ -391,10 +426,18 @@ void ofApp::ToggleDrawTestImage(bool &pressed)
     //drawTest = drawTest ? false : true;
 }
 
+void ofApp::ToggleReloadSeedImage(bool &pressed)
+{
+    if(pressed) {
+        testImage.load("0000.png");
+        reloadImage = false;
+    }
+}
 void ofApp::drawGUI()
 {
    freeDrawGui.draw();
    flockDrawGui.draw();
+   sciVizGui.draw();
 }
 
 string ofApp::getImageFileName(int cnt)

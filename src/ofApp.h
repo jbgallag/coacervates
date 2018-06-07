@@ -40,6 +40,8 @@ public:
     void drawReSampledPolylines(ofPolyline &resampledPoly, int tx, int ty);
     void ToggleFreeDrawMode(bool &pressed);
     void ToggleFlockDrawMode(bool &pressed);
+    void ToggleSciVizMode(bool &pressed);
+    void ToggleReloadSeedImage(bool &pressed);
 
     string getImageFileName(int cnt);
     //tensorflow constants
@@ -121,7 +123,9 @@ public:
     ofParameter<float>separateDistance;
     ofParameter<float>maxSpeed;
 
+    ofxPanel sciVizGui;
     ofParameter<bool>drawTestImage;
+    ofParameter<bool>reloadImage;
     bool drawTest;
     void ToggleDrawTestImage(bool &pressed);
 
