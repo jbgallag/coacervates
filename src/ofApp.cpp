@@ -274,7 +274,7 @@ void ofApp::draw(){
         model.run_image_to_image(inImage,outImage, input_range, output_range);
         drawImage.setFromPixels(outImage.getPixels());
         drawImage.resize(vWidth/2,vHeight);
-        drawImage.draw(dispXOff,dispYOff);
+        drawImage.draw(576,dispYOff);
 
         testImage.setFromPixels(outImage.getPixels());
     }
@@ -375,7 +375,7 @@ void ofApp::setupGUI()
     sciVizGui.setup();
     sciVizGui.setPosition(flockDrawGui.getWidth()+freeDrawGui.getWidth(), 50);
     drawTestImage.setName("VizSim");
-    drawTestImage.addListener(this, &ofApp::ToggleDrawTestImage);
+    drawTestImage.addListener(this, &ofApp::ToggleSciVizMode);
     sciVizGui.add(drawTestImage.set("VizSim"));
     reloadImage.setName("Reload Seed Image");
     reloadImage.addListener(this, &ofApp::ToggleReloadSeedImage);
@@ -394,6 +394,7 @@ void ofApp::ToggleFreeDrawMode(bool &pressed)
         //make sure flockDraw is off
         flockDraw = false;
         drawTestImage = false;
+        load_model_index(6);
     }
 }
 
@@ -403,6 +404,7 @@ void ofApp::ToggleFlockDrawMode(bool &pressed)
         //make sure flockDraw is off
         freeDraw = false;
         drawTestImage = false;
+        load_model_index(6);
     }
 }
 
@@ -411,6 +413,7 @@ void ofApp::ToggleSciVizMode(bool &pressed)
     if(pressed) {
         flockDraw = false;
         freeDraw = false;
+        load_model_index(0);
     }
 }
 
